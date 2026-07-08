@@ -41,32 +41,64 @@ sold = sold.drop(columns = to_remove.index)
 # This is our output
 print(f"New table: {sold.shape}")
 
-# Separate market analysis fields from metadata fields
+# Lets track the missing values for the columns that we keep
 
-# Calculate missing counts/percentages per column
+print("Missing Values")
+missing_values = pd.DataFrame({
+    'Column': sold.columns,
+    'MissingCount': sold.isnull().sum(),
+    'MissingPct': (sold.isnull().sum() / len(sold)) * 100
+})
+missing_values = missing_values[missing_values['MissingCount'] > 0].sort_values('MissingPct')
+print(missing_values)
 
-# Decide which columns to drop/retain
+# We see that some columns have almost all the values and some are missing
+# a significant amount, but we are keeping columns that have at least 
+# 10% of values available
 
 # Analyze the following: ClosePrice, ListPrice, OriginalListPrice,
 # LivingArea, LotSizeAcres, BedroomsTotal, BathroomsTotalInteger,
 # DaysOnMarket, YearBuilt
 
-# For each of above, make histograms, boxplots, percentile summaries
-# Find outliers for each (for later use)
+important_columns = ['ClosePrice', 'ListPrice', 'OriginalListPrice', 'LivingArea', 'LotSizeAcres', 'BedroomsTotal', 'BathroomsTotalInteger', 'DaysOnMarket', 'YearBuilt']
 
-## From the handbook
+for column in important_columns:
+    if column in sold.columns:
+        print(f"{column}")
+        # Describe will give us min/max/quartiles/std/mean
+        print(sold[column].describe())
 
-# # Inspect structure
-sold.columns
-sold.head()
-# Check property categories
+        # We can first make a histogram
+        plt.figure
+        plt.hist(sold[column].dropna(), bins = 25, edgecolor = 'black')
+        plt.title(f'{column} Distribution')
+        plt.xlabel(column)
+        plt.ylabel("Frequency")
+        plt.savefig(f'{column}_hist.png')
+        plt.close()
 
-sold['PropertyType'].unique()
+        # Next a boxplot
+        plt.figure
+        sns.boxplot(y = sold[column])
+        plt.title(f'{column} Boxplot')
+        plt.savefig(f'{column}_boxplot.png')
+        plt.close()
 
-# Filter residential
+        # Lastly, we calculate the IQR for outliers
+        q1 = sold[column].quantile(.25)
+        q3 = sold[column].quantile(.75)
+        iqr = q3 - q1
+        # we take our lower/upper bounds for valid inputs
+        lower_bound = q1 - (1.5 * iqr)
+        upper_bound = q3 + (1.5 * iqr)
+        # if anything isn't in this region, we can 
+        # mark it as a statistical outlier
+        outliers = sold[(sold[column] < lower_bound) | (sold[column] > upper_bound)]
+        print(f'Lower bound: {lower_bound}')
+        print(f'Upper bound: {upper_bound}')
+    
+print("Histograms and boxplots complete")
 
-sold = sold[sold.PropertyType == 'Residential']
+# Finally we can save this to a new csv
 
-# Validate completeness
-
-sold.isnull().sum()
+sold.to_csv('sold_week2.csv', index = False)
