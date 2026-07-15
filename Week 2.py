@@ -7,6 +7,7 @@ import seaborn as sns
 # To do's as comments throughout
 
 sold = pd.read_csv('sold_combined.csv')
+listings = pd.read_csv('listings_combined.csv')
 
 # Identify number of rows/columns
 
@@ -102,3 +103,56 @@ print("Histograms and boxplots complete")
 # Finally we can save this to a new csv
 
 sold.to_csv('sold_week2.csv', index = False)
+
+# This gets the mortgage data from fred
+url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=MORTGAGE30US"
+mortgage = pd.read_csv(url, parse_dates = ['observation_date'])
+# We only take the columns that we want to use
+mortgage.columns = ['date', 'rate_30yr_fixed']
+
+# We now want to get the monthly average
+mortgage['year_month'] = mortgage['date'].dt.to_period('M')
+mortgage_monthly = (
+    mortgage.groupby('year_month')['rate_30yr_fixed']
+    .mean()
+    .reset_index()
+)
+
+# We now make a matching year_month key on the current dataset
+sold['year_month'] = pd.to_datetime(sold['CloseDate']).dt.to_period('M')
+
+listings['year_month'] = pd.to_datetime(
+    listings['ListingContractDate']
+).dt.to_period('M')
+
+# Now we merge for both datasets
+sold_with_rates = sold.merge(mortgage_monthly, on = 'year_month', how = 'left')
+listings_with_rates = listings.merge(mortgage_monthly, on = 'year_month', how = 'left')
+
+# Print everything to ensure that we get the desired results
+
+sold_nulls = sold_with_rates['rate_30yr_fixed'].isnull().sum()
+listings_nulls = listings_with_rates['rate_30yr_fixed'].isnull().sum()
+
+# Only print if there is a null
+if sold_nulls > 0:
+    print(sold_nulls)
+
+if listings_nulls > 0:
+    print(listings_nulls)
+
+# If none, then we did correctly and we can show that
+if sold_nulls == 0 and listings_nulls == 0:
+    print("Success")
+
+print(
+    sold_with_rates[
+        ['CloseDate', 'year_month', 'ClosePrice', 'rate_30yr_fixed']
+    ].head()
+)
+
+# Finally we can just save the data as a csv
+sold_with_rates.to_csv('sold_with_mortgage_rates.csv', index = False)
+listings_with_rates.to_csv('listings_with_mortgage_rates.csv', index = False)
+
+print("Saved")
