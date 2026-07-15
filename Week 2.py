@@ -156,3 +156,5 @@ sold_with_rates.to_csv('sold_with_mortgage_rates.csv', index = False)
 listings_with_rates.to_csv('listings_with_mortgage_rates.csv', index = False)
 
 print("Saved")
+
+# Done with weeks 2-3
