@@ -92,3 +92,9 @@ listings_file.drop(columns = [c for c in drop_from_listings if c in listings_fil
 print(f"Listings columns post drop: {len(listings_file.columns)}")
 # The sold columns looked alright
 print(f"Sold columns: {len(sold_file.columns)}")
+
+# Finish the weeks 2-3 columns first
+# After doing this, then I can go to weeks 4-5
+
+# Go over mistakes and then figure out what to do in the
+# future for reference

@@ -32,12 +32,23 @@ def high_missing_columns(df, amount = 90):
     qualified = missing_percent[missing_percent > amount]
     return qualified
 
+# There are some columns that we will want to keep no matter what
+to_keep = [
+    'ClosePrice', 'ListPrice', 'OriginalListPrice', 'LivingArea', 'LotSizeAcres',
+    'BedroomsTotal', 'BathroomsTotalInteger', 'DaysOnMarket', 'YearBuilt',
+    'City', 'CountyOrParish', 'PostalCode', 'PropertyType', 'PropertySubType',
+    'ListOfficeName', 'BuyerOfficeName', 'ListAgentFullName', 'BuyerAgentFirstName',
+    'BuyerAgentLastName', 'CloseDate', 'ListingContractDate', 'PurchaseContractDate',
+    'WaterfrontYN', 'BasementYN', 'PoolPrivateYN', 'ViewYN'
+]
 # Now look at the list we created and remove these columns
-to_remove = high_missing_columns(sold, amount = 90)
-print(f"Columns >90% missing: {to_remove}")
+should_remove = high_missing_columns(sold, amount = 90)
+# Now just remove the ones that don't overlap
+to_remove = [col for col in should_remove.index if col not in to_keep]
+print(f"Columns >90% missing: {should_remove}")
 
 # Now we drop the columns
-sold = sold.drop(columns = to_remove.index)
+sold = sold.drop(columns = to_remove)
 
 # This is our output
 print(f"New table: {sold.shape}")
@@ -70,7 +81,7 @@ for column in important_columns:
         print(sold[column].describe())
 
         # We can first make a histogram
-        plt.figure
+        plt.figure()
         plt.hist(sold[column].dropna(), bins = 25, edgecolor = 'black')
         plt.title(f'{column} Distribution')
         plt.xlabel(column)
@@ -79,7 +90,7 @@ for column in important_columns:
         plt.close()
 
         # Next a boxplot
-        plt.figure
+        plt.figure()
         sns.boxplot(y = sold[column])
         plt.title(f'{column} Boxplot')
         plt.savefig(f'{column}_boxplot.png')
