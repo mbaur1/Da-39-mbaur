@@ -93,8 +93,56 @@ print(f"Listings columns post drop: {len(listings_file.columns)}")
 # The sold columns looked alright
 print(f"Sold columns: {len(sold_file.columns)}")
 
-# Finish the weeks 2-3 columns first
-# After doing this, then I can go to weeks 4-5
+# In the meantime, I fixed the issues that spilled over from Weeks 2-3
 
-# Go over mistakes and then figure out what to do in the
-# future for reference
+# Now its time to see what we will do with the missing values
+
+# Here are the metrics that come in a yes/no answer
+
+boolean_metrics = [
+    'WaterfrontYN', 'BasementYN', 'PoolPrivateYN', 'ViewYN', 'FireplaceYN',
+    'NewConstructionYN', 'AttachedGarageYN'
+]
+
+# for these, we will enter "no" if not available
+
+for col in boolean_metrics:
+    if col in sold_file.columns:
+        sold_file[col] = sold_file[col].fillna('N')
+    if col in listings_file.columns:
+        listings_file[col] = listings_file[col].fillna('N')
+
+# After we have done this for the boolean metrics, we can do so for
+# the categorical metrics
+
+categorical_metrics = [
+    'City', 'CountyOrParish', 'PropertyType', 'PropertySubType',
+    'ListOfficeName', 'BuyerOfficeName', 'MLSAreaMajor', 'SubdivisionName'
+]
+
+# We can do the same process with these
+# Copy the old code, but instead of "N" we can
+# just say "N/A" for not applicable
+
+for col in categorical_metrics:
+    if col in sold_file.columns:
+        sold_file[col] = sold_file[col].fillna('N/A')
+    if col in listings_file.columns:
+        listings_file[col] = listings_file[col].fillna('N/A')
+
+# Next step is to make sure that all numeric metrics are typed properly
+# It is possible that they are read as strings (meant as numbers)
+
+numeric_metrics = [
+    'ClosePrice', 'LivingArea', 'DaysOnMarket', 'BedroomsTotal',
+    'BathroomsTotalInteger,' 'ListPrice', 'OriginalListPrice'
+]
+
+# We can use the same conditionals as before, just with a little switch
+# In the nested portion, we will just override the system and switch it manually to a number
+
+for col in categorical_metrics:
+    if col in sold_file.columns:
+        sold_file[col] = pd.to_numeric(sold_file[col], errors = 'coerce')
+    if col in listings_file.columns:
+        listings_file[col] = pd.to_numeric(listings_file[col], errors = 'coerce')
