@@ -146,3 +146,32 @@ for col in categorical_metrics:
         sold_file[col] = pd.to_numeric(sold_file[col], errors = 'coerce')
     if col in listings_file.columns:
         listings_file[col] = pd.to_numeric(listings_file[col], errors = 'coerce')
+
+# Once this is finished, we can remove numbers that are impossible to get
+# For example, a close price/living area/day on market cannot be less than 0,
+# So we will eliminate the chance that these metrics are negative in any way
+
+# The following are the metrics that need to be greater than 0
+
+sold_file = sold_file[
+    (sold_file['ClosePrice'] > 0) &
+    (sold_file['LivingArea'] > 0) &
+    (sold_file['DaysOnMarket'] >= 0) &
+    (sold_file['BedroomsTotal'] >= 0) &
+    (sold_file['BathroomsTotalInteger'] >= 0)
+]
+
+# We can repeat the above for the listings files
+
+listings_file = listings_file[
+    (listings_file['ListPrice'] > 0) &
+    (listings_file['LivingArea'] > 0) &
+    (listings_file['DaysOnMarket'] >= 0) &
+    (listings_file['BedroomsTotal'] >= 0) &
+    (listings_file['BathroomsTotalInteger'] >= 0)
+]
+
+# Now as a check, we can print the total number of rows for each
+
+print(f"Sold rows left: {len(sold_file):,}")
+print(f"Listings rows left: {len(listings_file):,}")
