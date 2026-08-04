@@ -93,10 +93,11 @@ print(f"Listings columns post drop: {len(listings_file.columns)}")
 # The sold columns looked alright
 print(f"Sold columns: {len(sold_file.columns)}")
 
+# Break from the end of week 4
+
 # In the meantime, I fixed the issues that spilled over from Weeks 2-3
 
 # Now its time to see what we will do with the missing values
-
 # Here are the metrics that come in a yes/no answer
 
 boolean_metrics = [
@@ -135,13 +136,13 @@ for col in categorical_metrics:
 
 numeric_metrics = [
     'ClosePrice', 'LivingArea', 'DaysOnMarket', 'BedroomsTotal',
-    'BathroomsTotalInteger,' 'ListPrice', 'OriginalListPrice'
+    'BathroomsTotalInteger', 'ListPrice', 'OriginalListPrice'
 ]
 
 # We can use the same conditionals as before, just with a little switch
 # In the nested portion, we will just override the system and switch it manually to a number
 
-for col in categorical_metrics:
+for col in numeric_metrics:
     if col in sold_file.columns:
         sold_file[col] = pd.to_numeric(sold_file[col], errors = 'coerce')
     if col in listings_file.columns:
@@ -175,3 +176,89 @@ listings_file = listings_file[
 
 print(f"Sold rows left: {len(sold_file):,}")
 print(f"Listings rows left: {len(listings_file):,}")
+
+# The next step is to flag the date consistency
+
+# Will the listing date come after the close date?
+# If so, then likely wrong
+
+sold_file['listing_after_close_flag'] = (
+    sold_file['ListingContractDate'] > sold_file['CloseDate']
+)
+
+# Next, we do the same but for the purchase date
+# comes after the close date
+
+sold_file['purchasing_after_close_flag'] = (
+    sold_file['PurchaseContractDate'] > sold_file['CloseDate']
+)
+
+# Finally, we can flag if the listing date comes after
+# the purchase date
+
+sold_file['negative_timeline_flag'] = (
+    sold_file['ListingContractDate'] > sold_file['PurchaseContractDate']
+)
+
+print("Date Consistency Flag (#):")
+print(f" Listing after Close Date: {sold_file['listing_after_close_flag'].sum():,}")
+print(f" Purchase after Close Date: {sold_file['purchasing_after_close_flag'].sum():,}")
+print(f" Listing after Purchase Date: {sold_file['negative_timeline_flag'].sum():,}")
+
+# After this, we go for the geographical checks
+
+# Flag records with missing coordinates (Latitude or Longitude is null)
+# Flag Latitude = 0 or Longitude = 0 (sentinel null values)
+# Flag Longitude > 0 errors (California coordinates should be negative)
+# Flag out-of-state or implausible coordinates
+
+# Note that for California, the latitude is around
+# 32 to 42 while the longitude is roughly -124 to
+# -114, so we can use these bounds to check if a location
+# is out of the state (even if it is a valid coordinate)
+
+# Missing coordinates can get flagged first
+
+sold_file['missing_coordinates_flag'] = (
+    (sold_file['Latitude'].isnull()) |
+    (sold_file['Longitude'].isnull())
+)
+
+# Next if the coordinates are 0 
+
+sold_file['zero_coordinates_flag'] = (
+    (sold_file['Latitude'] == 0) |
+    (sold_file['Longitude'] == 0)
+)
+
+# Next if the longitude is positive (need a negative)
+
+sold_file['longitude_flag'] = (
+    sold_file['Longitude'] > 0
+)
+
+# Finally if out of state
+
+sold_file['out_of_state_flag'] = (
+    (sold_file['Latitude'] < 32) |
+    (sold_file['Latitude'] > 42) |
+    (sold_file['Longitude'] < -124) |
+    (sold_file['Longitude'] > -114)
+)
+
+# Now we can summarize the results
+
+print('Geographical Data Quality')
+print(f"Missing Coordinates: {sold_file['missing_coordinates_flag'].sum():,}")
+print(f"Zero Coordinates: {sold_file['zero_coordinates_flag'].sum():,}")
+print(f"Positive Longitude: {sold_file['longitude_flag'].sum():,}")
+print(f"Out of State Coordinates: {sold_file['out_of_state_flag'].sum():,}")
+
+# We are done gathering the data, so we can now export
+# the datasets for future use
+
+sold_file.to_csv('sold_new.csv', index = False)
+listings_file.to_csv('listings_new.csv', index = False)
+
+print(f"  sold_new.csv    : {len(sold_file):,} rows, {len(sold_file.columns)} columns")
+print(f"  listings_new.csv: {len(listings_file):,} rows, {len(listings_file.columns)} columns")
