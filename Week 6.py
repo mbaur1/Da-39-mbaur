@@ -127,7 +127,58 @@ sold_file = sold_file.merge(
     sold_with_districts[['ListingKey', 'school_district']],
     on='ListingKey',
     how='left'
-)
+).drop_duplicates(subset = 'ListingKey')
 
 print(f"\nsold_file has {len(sold_file):,} rows and school_district column added")
 sold_file.to_csv('sold_new.csv', index=False)
+
+# I think the engineering part is done by now,
+# so all that is needed is to group the metrics
+# to find the underlying market patterns
+
+# First, we get the means for some stats
+# such as close price, price per sf
+# days on market, and total sales
+# many of which we calculated above
+
+property_segments = sold_file.groupby([
+    'PropertyType', 'PropertySubType'
+]).agg(
+    avg_close_price = ('ClosePrice', 'mean'),
+    avg_price_per_sf = ('price_per_sf', 'mean'),
+    avg_days_on_market = ('DaysOnMarket', 'mean'),
+    total_sales = ('ClosePrice', 'count')
+).reset_index()
+
+# Print the findings
+
+print("\nProperty Type Segments:")
+print(property_segments)
+
+
+# We want to do the same for the county 
+# So we will do the same metrics and same code,
+# but we switch up the grouping
+# Instead, we group by these
+# CountyOrParish and MLSAreaMajor
+county_segments = sold_file.groupby(['CountyOrParish', 'MLSAreaMajor']).agg(
+    avg_close_price=('ClosePrice', 'mean'),
+    avg_price_per_sf=('price_per_sf', 'mean'),
+    avg_days_on_market=('DaysOnMarket', 'mean'),
+    total_sales=('ClosePrice', 'count')
+).reset_index()
+
+print("\nCounty Segments:")
+print(county_segments)
+
+# Lastly, we do the same for th the office
+# so we decide to group by these
+# ListOfficeName and BuyerOfficeName - competitive intelligence
+office_segments = sold_file.groupby(['ListOfficeName', 'BuyerOfficeName']).agg(
+    avg_close_price=('ClosePrice', 'mean'),
+    avg_price_per_sf=('price_per_sf', 'mean'),
+    total_sales=('ClosePrice', 'count')
+).reset_index()
+
+print("\nOffice Segments:")
+print(office_segments)
